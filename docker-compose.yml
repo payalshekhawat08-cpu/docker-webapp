@@ -1,0 +1,37 @@
+# Stage: Container -> Docker Compose -> Running Application
+services:
+  web:
+    build: ./app
+    image: flask-redis-app:1.0
+    ports:
+      - "${APP_PORT:-5000}:5000"
+    environment:
+      APP_MESSAGE: ${APP_MESSAGE:-Hello from Docker Compose!}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+
+networks:
+  backend:
